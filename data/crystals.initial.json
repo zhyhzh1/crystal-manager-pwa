@@ -1,0 +1,155 @@
+[
+  {
+    "name": "白水晶",
+    "element": ["金"],
+    "tags": ["净化", "平衡", "稳定", "专注"],
+    "directions": ["事业", "学业", "综合"],
+    "role": ["万能辅助珠"],
+    "description": "适合作为基础平衡型晶石，用于各种主题手串搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "白玛瑙",
+    "element": ["金"],
+    "tags": ["稳定", "守护", "平衡"],
+    "directions": ["日常", "情绪稳定", "人际"],
+    "role": ["辅助珠"],
+    "description": "适合清新温和风格搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "珍珠",
+    "element": ["水", "金"],
+    "tags": ["温柔", "人缘", "女性魅力", "平衡"],
+    "directions": ["感情", "人际", "女性"],
+    "role": ["主珠", "点缀珠"],
+    "description": "适合温柔优雅风格搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "白阿赛",
+    "element": ["金"],
+    "tags": ["纯净", "稳定", "提升气场"],
+    "directions": ["事业", "综合"],
+    "role": ["辅助珠"],
+    "description": "适合简约纯净风格搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "白月光",
+    "element": ["水", "金"],
+    "tags": ["温柔", "直觉", "情绪平衡", "人缘"],
+    "directions": ["感情", "人际"],
+    "role": ["主珠"],
+    "description": "适合女性、感情主题搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "灰兔毛",
+    "element": ["金", "土"],
+    "tags": ["沉稳", "积累", "稳定"],
+    "directions": ["事业", "财富"],
+    "role": ["辅助珠"],
+    "description": "适合成熟稳定风格搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "白兔毛",
+    "element": ["金"],
+    "tags": ["纯净", "柔和", "平衡"],
+    "directions": ["日常", "情绪"],
+    "role": ["辅助珠"],
+    "description": "适合温柔清透风格搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "暴风雪白幽灵",
+    "element": ["金", "土"],
+    "tags": ["事业", "成长", "财富", "稳定"],
+    "directions": ["事业", "财富"],
+    "role": ["主珠"],
+    "description": "适合事业成长主题搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "奶白晶",
+    "element": ["金"],
+    "tags": ["温柔", "稳定", "安全感"],
+    "directions": ["女性", "日常"],
+    "role": ["辅助珠"],
+    "description": "适合柔和奶油色系搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "黑金超",
+    "element": ["水", "金"],
+    "tags": ["保护", "力量", "事业", "稳定"],
+    "directions": ["事业", "商务"],
+    "role": ["主珠"],
+    "description": "适合力量感主题搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "银曜石",
+    "element": ["水"],
+    "tags": ["守护", "稳定", "安全感"],
+    "directions": ["事业", "情绪稳定"],
+    "role": ["主珠"],
+    "description": "适合稳定守护主题搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "金耀石",
+    "element": ["水", "金"],
+    "tags": ["保护", "行动力", "坚定"],
+    "directions": ["事业", "财富"],
+    "role": ["主珠"],
+    "description": "适合增强力量感的搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "冰曜石",
+    "element": ["水"],
+    "tags": ["冷静", "稳定", "平衡"],
+    "directions": ["情绪", "日常"],
+    "role": ["辅助珠"],
+    "description": "适合简洁沉稳风格。",
+    "status": "上架"
+  },
+  {
+    "name": "茶晶",
+    "element": ["土"],
+    "tags": ["稳定", "沉淀", "财富"],
+    "directions": ["财富", "事业"],
+    "role": ["主珠"],
+    "description": "适合稳定积累主题搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "黄水晶",
+    "element": ["土"],
+    "tags": ["财富", "自信", "行动"],
+    "directions": ["财富", "事业"],
+    "role": ["核心主珠"],
+    "description": "适合财富主题搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "黄玛瑙",
+    "element": ["土"],
+    "tags": ["稳定", "积累", "守护"],
+    "directions": ["财富", "日常"],
+    "role": ["辅助珠"],
+    "description": "适合稳定型财富搭配。",
+    "status": "上架"
+  },
+  {
+    "name": "黄虎眼",
+    "element": ["土", "火"],
+    "tags": ["勇气", "执行力", "财富", "行动"],
+    "directions": ["事业", "财富"],
+    "role": ["主珠"],
+    "description": "适合事业行动主题搭配。",
+    "status": "上架"
+  }
+]

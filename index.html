@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#eef8ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="晶石五行" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>晶石五行测算</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <main id="view" class="view"></main>
+
+    <nav class="bottom-tabs" aria-label="底部导航">
+      <button class="tab active" data-tab="measure" type="button">◇<span>测算</span></button>
+      <button class="tab" data-tab="mine" type="button">○<span>我的</span></button>
+    </nav>
+  </div>
+
+  <template id="homeTemplate">
+    <section class="page page-home">
+      <div class="page-head">
+        <span class="eyebrow">CRYSTAL · FIVE ELEMENTS</span>
+        <h1>五行喜用神测算</h1>
+        <p>店主与店员使用的顾客测算和水晶搭配辅助工具</p>
+      </div>
+
+      <article class="card">
+        <h2>开始顾客测算</h2>
+        <p>输入顾客出生信息，生成五行分析、喜用神参考和手串搭配建议。</p>
+        <button class="primary-btn" id="startMeasure" type="button">进入测算</button>
+      </article>
+    </section>
+  </template>
+
+  <template id="formTemplate">
+    <section class="page">
+      <div class="page-head compact">
+        <span class="eyebrow">CRYSTAL · FIVE ELEMENTS</span>
+        <h1>五行喜用神测算</h1>
+        <p>输入出生信息，生成专属晶石五行搭配</p>
+      </div>
+
+      <article class="card intro-card">
+        <h2>本次将为你分析</h2>
+        <p>五行强弱、喜用神参考、水晶建议和手串搭配方案。</p>
+      </article>
+
+      <form id="measureForm" class="card form-card">
+        <label>姓名 / 昵称<input name="name" placeholder="请输入名字或昵称" required /></label>
+        <label>性别
+          <select name="gender" required>
+            <option value="">请选择性别</option>
+            <option>女</option>
+            <option>男</option>
+            <option>不方便透露</option>
+          </select>
+        </label>
+        <fieldset>
+          <legend>出生日期</legend>
+          <input name="birthDate" id="birthDateValue" type="hidden" required />
+          <div class="date-wheel-row">
+            <label><select id="birthYear"></select><span>年</span></label>
+            <label><select id="birthMonth"></select><span>月</span></label>
+            <label><select id="birthDay"></select><span>日</span></label>
+          </div>
+        </fieldset>
+        <label>出生时间<input name="birthTime" type="time" value="12:00" required /></label>
+        <p class="field-tip">请尽量精确到分钟；如果不清楚，可填写中午 12:00，结果仅作参考。</p>
+        <label>出生地点（精确至区 / 县）<input name="birthPlace" placeholder="例如：河北省石家庄市长安区" required /></label>
+        <label>顾客备注<textarea name="remark" placeholder="可记录颜色偏好、预算、佩戴习惯等（选填）"></textarea></label>
+
+        <fieldset>
+          <legend>重点关注方向</legend>
+          <div class="chips" id="focusChips"></div>
+        </fieldset>
+
+        <button class="primary-btn" type="submit">开始测算五行喜用神</button>
+      </form>
+    </section>
+  </template>
+
+  <template id="resultTemplate">
+    <section class="page">
+      <div class="page-head compact">
+        <span class="eyebrow">STORE ASSISTANT · CRYSTAL MATCH</span>
+        <h1 id="resultTitle">五行搭配参考</h1>
+        <p id="birthSummary"></p>
+      </div>
+
+      <article class="card">
+        <h2>生辰八字</h2>
+        <div class="pillars" id="baziPillars"></div>
+      </article>
+
+      <article class="card day-master-card">
+        <h2>日主与格局倾向</h2>
+        <div class="day-master-main">
+          <div class="day-master-orb" id="dayMasterOrb">日</div>
+          <div class="day-master-copy">
+            <b id="dayMasterTitle"></b>
+            <span id="dayMasterState"></span>
+            <span id="dayMasterSupport"></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>五行能量分析</h2>
+        <div id="elementBars"></div>
+        <div class="summary-grid">
+          <div><small>最旺：</small><strong id="strongestText"></strong></div>
+          <div><small>偏弱：</small><strong id="weakText"></strong></div>
+        </div>
+        <p class="analysis-copy" id="elementAnalysis"></p>
+      </article>
+
+      <article class="card">
+        <h2>喜用神参考</h2>
+        <div class="recommend-list" id="usefulGods"></div>
+        <p class="analysis-copy" id="pairingAdvice"></p>
+      </article>
+
+      <article class="card">
+        <h2>推荐晶石</h2>
+        <div class="crystal-tags" id="recommendedCrystals"></div>
+      </article>
+
+      <div id="braceletPlans"></div>
+
+      <p class="disclaimer">本结果仅作传统文化与水晶搭配参考，不作为人生决策依据。</p>
+
+      <div class="button-row">
+        <button class="ghost-btn" id="detailBtn" type="button">查看详细分析</button>
+        <button class="primary-btn" id="againBtn" type="button">重新测算</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="detailTemplate">
+    <section class="page">
+      <div class="page-head compact">
+        <span class="eyebrow">PERSONAL · FIVE ELEMENTS REPORT</span>
+        <h1 id="detailTitle">详细分析报告</h1>
+        <p>供店主与店员辅助沟通使用，内容以倾向和参考为主</p>
+      </div>
+
+      <div id="detailContent"></div>
+      <p class="disclaimer">本报告仅作传统文化与五行沟通参考，不作为人生决策依据。</p>
+    </section>
+  </template>
+
+  <template id="mineTemplate">
+    <section class="page">
+      <div id="mineLock" class="lock-panel">
+        <h1>管理中心</h1>
+        <p>请输入店主口令后查看和管理信息</p>
+        <input id="minePassword" type="password" placeholder="输入专属口令" />
+        <button class="primary-btn" id="unlockMine" type="button">进入管理</button>
+        <p class="message" id="lockMessage"></p>
+      </div>
+    </section>
+  </template>
+
+  <template id="manageTemplate">
+    <section class="page">
+      <div class="page-head compact">
+        <span class="eyebrow">STORE · STAFF CENTER</span>
+        <h1>管理中心</h1>
+        <p>本机保存顾客记录和水晶管理数据</p>
+      </div>
+
+      <article class="card manage-entry" id="customerEntry">
+        <b>顾客信息管理</b>
+        <span>查看、搜索、编辑、重新测算、删除顾客资料。</span>
+      </article>
+      <article class="card manage-entry" id="crystalEntry">
+        <b>水晶管理</b>
+        <span>查看、添加、编辑、删除、上下架水晶。</span>
+      </article>
+    </section>
+  </template>
+
+  <template id="recordsTemplate">
+    <section class="page">
+      <div class="page-head compact">
+        <span class="eyebrow">CUSTOMER MANAGEMENT</span>
+        <h1>顾客信息管理</h1>
+        <p>店内顾客记录保存在当前设备，可查看历史报告或重新测算</p>
+      </div>
+      <input id="recordSearch" class="search" placeholder="搜索顾客姓名或备注" />
+      <div class="filter-bar" id="customerFocusFilters"></div>
+      <div id="recordsList"></div>
+    </section>
+  </template>
+
+  <dialog id="customerDialog">
+    <form method="dialog" id="customerForm" class="dialog-form">
+      <h2>编辑顾客资料</h2>
+      <input name="id" type="hidden" />
+
+      <label>姓名 / 昵称<input name="name" placeholder="请输入顾客姓名或昵称" required /></label>
+      <label>性别
+        <select name="gender" required>
+          <option value="">请选择</option>
+          <option>女</option>
+          <option>男</option>
+          <option>不方便透露</option>
+        </select>
+      </label>
+      <div class="field-grid">
+        <label>出生日期<input name="birthDate" type="date" required /></label>
+        <label>出生时间<input name="birthTime" type="time" required /></label>
+      </div>
+
+      <fieldset>
+        <legend>关注方向（多选）</legend>
+        <div class="chips option-chips" id="customerFocusOptions"></div>
+      </fieldset>
+
+      <label>顾客备注<textarea name="remark" placeholder="例如：喜欢清透绿色系，预算500左右"></textarea></label>
+
+      <p class="field-tip">保存后只更新顾客资料，不会自动重新测算；需要更新报告时请点击“重新测算”。</p>
+      <div class="button-row">
+        <button class="ghost-btn" value="cancel" type="button" id="cancelCustomer">取消</button>
+        <button class="primary-btn" value="default" type="submit">保存资料</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="crystalsTemplate">
+    <section class="page">
+      <div class="page-head compact">
+        <span class="eyebrow">CRYSTAL DATABASE</span>
+        <h1>水晶管理</h1>
+        <p>店主后台管理页，可维护图片、五行、标签、方向和上下架状态</p>
+      </div>
+      <div class="toolbar">
+        <input id="crystalSearch" class="search" placeholder="搜索水晶名称" />
+        <button class="primary-btn add-btn" id="addCrystal" type="button">新增水晶</button>
+      </div>
+      <div id="crystalList"></div>
+    </section>
+  </template>
+
+  <dialog id="crystalDialog">
+    <form method="dialog" id="crystalForm" class="dialog-form">
+      <h2 id="dialogTitle">新增水晶</h2>
+      <input name="id" type="hidden" />
+      <input name="image" type="hidden" />
+      <input name="aiConfidence" type="hidden" />
+      <input name="aiStatus" type="hidden" />
+      <input name="source" type="hidden" />
+      <input name="manualEdited" type="hidden" />
+      <input name="mineralCategory" type="hidden" />
+
+      <label>水晶名称<input name="name" placeholder="例如：绿幽灵" required /></label>
+      <button class="ghost-btn ai-classify-btn" id="aiClassifyCrystal" type="button">AI智能分类</button>
+      <div id="aiClassifyResult" class="ai-result" hidden></div>
+
+      <div class="image-field">
+        <div class="image-preview" id="crystalImagePreview">晶</div>
+        <div class="image-actions">
+          <label class="file-label">上传图片
+            <input id="crystalImageFile" type="file" accept="image/*" />
+          </label>
+          <input id="crystalImageUrl" placeholder="或粘贴图片链接（选填）" />
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>五行属性（多选）</legend>
+        <div class="chips option-chips" id="elementOptions"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>功能标签（多选）</legend>
+        <div class="chips option-chips" id="tagOptions"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>适合方向（多选）</legend>
+        <div class="chips option-chips" id="directionOptions"></div>
+      </fieldset>
+
+      <label>搭配角色<input name="role" placeholder="例如：主珠、辅助珠、点缀珠" /></label>
+      <label>简介<textarea name="description"></textarea></label>
+      <label>状态
+        <select name="status">
+          <option>上架</option>
+          <option>下架</option>
+        </select>
+      </label>
+      <div class="button-row">
+        <button class="ghost-btn" value="cancel" type="button" id="cancelCrystal">取消</button>
+        <button class="primary-btn" value="default" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="./assets/lunar.js"></script>
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
