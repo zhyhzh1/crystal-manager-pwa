@@ -1,13 +1,15 @@
 const $ = selector => document.querySelector(selector);
 const view = $('#view');
 const tabs = [...document.querySelectorAll('.tab')];
-let mineUnlocked = false;
+const AI_ACCESS_SESSION_KEY = 'crystal_pwa_ai_access_code';
+let mineUnlocked = Boolean(sessionStorage.getItem(AI_ACCESS_SESSION_KEY));
 
 const STORAGE = {
   records: 'crystal_pwa_records',
   crystals: 'crystal_pwa_crystals',
   lastResult: 'crystal_pwa_last_result',
-  unlocked: 'crystal_pwa_mine_unlocked'
+  unlocked: 'crystal_pwa_mine_unlocked',
+  aiFeedback: 'crystal_pwa_ai_feedback'
 };
 
 const ELEMENT_ORDER = ['木', '火', '土', '金', '水'];
@@ -141,6 +143,18 @@ function getJSON(key, fallback) {
 }
 function setJSON(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 function uid() { return `${Date.now()}_${Math.random().toString(16).slice(2)}`; }
+function recordAIFeedback(result, decision) {
+  if (!result?.requestId || !['accepted', 'modified', 'rejected'].includes(decision)) return;
+  const feedback = getJSON(STORAGE.aiFeedback, []);
+  feedback.unshift({
+    requestId: String(result.requestId).slice(0, 200),
+    decision,
+    candidate: String(result.primaryCategory || '').slice(0, 100),
+    confidenceLevel: ['high', 'medium', 'low'].includes(result.confidenceLevel) ? result.confidenceLevel : 'low',
+    createdAt: new Date().toISOString()
+  });
+  setJSON(STORAGE.aiFeedback, feedback.slice(0, 200));
+}
 function splitList(value) { return String(value || '').split(/[,，、]/).map(item => item.trim()).filter(Boolean); }
 function unique(list) { return [...new Set(list.filter(Boolean))]; }
 function escapeHTML(value = '') {
@@ -647,16 +661,38 @@ function showDetail(result = getJSON(STORAGE.lastResult, null), backHandler = ()
 
 function showMine() {
   setActiveTab('mine');
+  if (mineUnlocked) return showManage();
   renderTemplate('mineTemplate');
   addBackButton(showHome);
-  $('#unlockMine').onclick = () => {
-    if ($('#minePassword').value === '8888') {
+  $('#unlockMine').onclick = async () => {
+    const button = $('#unlockMine');
+    const code = $('#minePassword').value.trim();
+    if (!code) {
+      $('#lockMessage').textContent = '请输入店主口令。';
+      return;
+    }
+    button.disabled = true;
+    button.textContent = '正在验证……';
+    try {
+      const response = await fetch('/.netlify/functions/analyze-crystal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-AI-Access-Code': code },
+        body: JSON.stringify({ action: 'verify_access' })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) throw new Error(payload.message || '口令验证失败');
+      sessionStorage.setItem(AI_ACCESS_SESSION_KEY, code);
       mineUnlocked = true;
       $('#lockMessage').style.color = '#3e7a48';
       $('#lockMessage').textContent = '晶石正在回应你……';
       setTimeout(showManage, 350);
-    } else {
-      $('#lockMessage').textContent = '口令好像不对，请向店主确认一下哦。';
+    } catch (error) {
+      mineUnlocked = false;
+      sessionStorage.removeItem(AI_ACCESS_SESSION_KEY);
+      $('#lockMessage').textContent = error.message;
+    } finally {
+      button.disabled = false;
+      button.textContent = '进入管理';
     }
   };
 }
@@ -664,7 +700,12 @@ function showManage() {
   setActiveTab('mine');
   if (!mineUnlocked) return showMine();
   renderTemplate('manageTemplate');
-  addBackButton(showMine);
+  addBackButton(showHome);
+  const feedback = getJSON(STORAGE.aiFeedback, []);
+  const count = decision => feedback.filter(item => item.decision === decision).length;
+  $('#aiFeedbackSummary').textContent = feedback.length
+    ? `已采用 ${count('accepted')} 次 · 人工修改 ${count('modified')} 次 · 不采用 ${count('rejected')} 次`
+    : '当前设备暂无反馈记录。';
   $('#customerEntry').onclick = showRecords;
   $('#crystalEntry').onclick = showCrystals;
 }
@@ -1029,7 +1070,7 @@ function renderAIResult(result) {
   `;
 }
 
-function renderRemoteAIResult(result) {
+function renderRemoteAIResult(result, { onAdopt, onReject }) {
   const box = $('#aiClassifyResult');
   const levelLabels = { high: '较高', medium: '中等', low: '较低' };
   const level = result.confidenceLevel || 'low';
@@ -1044,23 +1085,37 @@ function renderRemoteAIResult(result) {
     <div>传统寓意：${escapeHTML(result.traditionalMeaning || '暂无')}</div>
     <div>商品简介：${escapeHTML(result.description || '暂无')}</div>
     ${result.customAnswer ? `<div>补充回答：${escapeHTML(result.customAnswer)}</div>` : ''}
+    <div>判断依据：${escapeHTML(asArray(result.evidence).join('、') || '暂无')}</div>
     <div>不确定信息：${escapeHTML(asArray(result.uncertainties).join('、') || '无')}</div>
     <div class="ai-meta">
       ${asArray(result.element).map(item => `<span>五行：${escapeHTML(item)}</span>`).join('')}
       ${asArray(result.tags).map(item => `<span>${escapeHTML(item)}</span>`).join('')}
       ${asArray(result.directions).map(item => `<span>${escapeHTML(item)}</span>`).join('')}
     </div>
+    ${level === 'low' ? '<div class="ai-warning">可信度较低，建议补拍清晰照片或人工核对后再采用。</div>' : ''}
+    <div class="ai-actions">
+      <button class="primary-btn" id="adoptAiSuggestion" type="button">${level === 'low' ? '核对后仍采用' : '采用这份建议'}</button>
+      <button class="ghost-btn" id="rejectAiSuggestion" type="button">不采用</button>
+    </div>
     <small>本次用量：${Number(result.totalTokens || 0)} tokens。AI 不能鉴定真伪、天然性、产地或实际功效。</small>
   `;
+  $('#adoptAiSuggestion').onclick = onAdopt;
+  $('#rejectAiSuggestion').onclick = onReject;
 }
 
 async function requestCrystalAI({ image, productName, customQuestion }) {
+  const accessCode = sessionStorage.getItem(AI_ACCESS_SESSION_KEY) || '';
   const response = await fetch('/.netlify/functions/analyze-crystal', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-AI-Access-Code': accessCode },
     body: JSON.stringify({ image, productName, customQuestion })
   });
   const payload = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    mineUnlocked = false;
+    sessionStorage.removeItem(AI_ACCESS_SESSION_KEY);
+  }
+  if (response.status === 429) throw new Error('AI 请求过于频繁，请稍等一分钟后重试');
   if (!response.ok || !payload.success) throw new Error(payload.message || `AI 请求失败（${response.status}）`);
   return payload.data;
 }
@@ -1094,6 +1149,8 @@ function openCrystalEditor(item = null) {
   fields.source.value = item?.source || (item ? 'manual' : '');
   fields.manualEdited.value = item?.manualEdited ? 'true' : '';
   fields.mineralCategory.value = item?.mineralCategory || '';
+  fields.aiRequestId.value = '';
+  fields.aiDecision.value = '';
   $('#aiClassifyResult').hidden = true;
   $('#aiClassifyResult').innerHTML = '';
   $('#crystalImageUrl').value = getCrystalImage(item || {});
@@ -1102,16 +1159,26 @@ function openCrystalEditor(item = null) {
   fields.description.value = item?.description || '';
   fields.status.value = item?.status || '上架';
   updateImagePreview(fields.image.value, fields.name.value);
+  let latestAIImage = '';
+
+  const markAIEdited = () => {
+    if (fields.aiDecision.value === 'accepted') fields.aiDecision.value = 'modified';
+    fields.manualEdited.value = 'true';
+  };
 
   dialog.onclick = event => {
     const chip = event.target.closest('.option-chip');
-    if (chip) chip.classList.toggle('active');
+    if (chip) {
+      chip.classList.toggle('active');
+      markAIEdited();
+    }
   };
   fields.name.oninput = () => {
     if (!fields.image.value) updateImagePreview('', fields.name.value);
-    fields.manualEdited.value = 'true';
-    if (fields.source.value === 'ai') fields.source.value = 'manual';
+    markAIEdited();
   };
+  fields.role.oninput = markAIEdited;
+  fields.description.oninput = markAIEdited;
   const runRemoteAnalysis = async image => {
     const button = $('#aiClassifyCrystal');
     const box = $('#aiClassifyResult');
@@ -1121,23 +1188,50 @@ function openCrystalEditor(item = null) {
     box.className = 'ai-result';
     box.innerHTML = '<strong>正在分析图片与商品信息……</strong><div>通常需要数秒，请不要关闭页面。</div>';
     try {
+      if (image) latestAIImage = image;
       const result = await requestCrystalAI({
-        image: image || fields.image.value,
+        image: image || latestAIImage || fields.image.value,
         productName: fields.name.value.trim(),
         customQuestion: $('#crystalAiQuestion').value.trim()
       });
-      renderRemoteAIResult(result);
-      fillRemoteAIForm(result);
+      fields.aiRequestId.value = '';
+      fields.aiDecision.value = '';
+      renderRemoteAIResult(result, {
+        onAdopt: () => {
+          fillRemoteAIForm(result);
+          fields.aiRequestId.value = result.requestId || '';
+          fields.aiDecision.value = 'accepted';
+          fields.manualEdited.value = 'false';
+          $('#adoptAiSuggestion').disabled = true;
+          $('#adoptAiSuggestion').textContent = '已采用，可继续人工修改';
+          $('#rejectAiSuggestion').disabled = true;
+        },
+        onReject: () => {
+          recordAIFeedback(result, 'rejected');
+          fields.aiRequestId.value = '';
+          fields.aiDecision.value = 'rejected';
+          $('#adoptAiSuggestion').disabled = true;
+          $('#rejectAiSuggestion').disabled = true;
+          $('#rejectAiSuggestion').textContent = '已记录不采用';
+        }
+      });
     } catch (error) {
       const fallback = analyzeCrystalName(fields.name.value, fields.id.value);
-      if (fields.name.value.trim()) {
-        fallback.message = `真实 AI 暂时不可用：${error.message}。已改用本地规则结果。`;
+      box.className = 'ai-result not-found';
+      box.innerHTML = `
+        <strong>本次分析失败</strong>
+        <div>${escapeHTML(error.message)}</div>
+        <div class="ai-actions">
+          <button class="primary-btn" id="retryAiAnalysis" type="button">重新尝试</button>
+          ${fields.name.value.trim() ? '<button class="ghost-btn" id="useLocalRules" type="button">使用本地规则</button>' : ''}
+        </div>
+        <small>${fields.name.value.trim() ? '本地规则只根据名称判断，并非视觉模型结果。' : '也可以手动输入名称和分类信息。'}</small>`;
+      $('#retryAiAnalysis').onclick = () => runRemoteAnalysis(latestAIImage);
+      if ($('#useLocalRules')) $('#useLocalRules').onclick = () => {
+        fallback.message = `真实 AI 暂时不可用：${error.message}。这是本地名称规则结果。`;
         renderAIResult(fallback);
         fillCrystalForm(fallback);
-      } else {
-        box.className = 'ai-result not-found';
-        box.innerHTML = `<strong>本次分析失败</strong><div>${escapeHTML(error.message)}</div><div>请稍后重试，或手动输入名称和分类信息。</div>`;
-      }
+      };
     } finally {
       button.disabled = false;
       button.textContent = '重新 AI 分析';
@@ -1152,6 +1246,7 @@ function openCrystalEditor(item = null) {
   };
   $('#crystalImageUrl').oninput = event => {
     fields.image.value = event.target.value.trim();
+    latestAIImage = '';
     updateImagePreview(fields.image.value, fields.name.value);
   };
   $('#crystalImageFile').onchange = async event => {
@@ -1200,6 +1295,13 @@ $('#crystalForm').onsubmit = event => {
     return;
   }
   const index = crystals.findIndex(item => item.id === saved.id);
+  if (data.aiRequestId && ['accepted', 'modified'].includes(data.aiDecision)) {
+    recordAIFeedback({
+      requestId: data.aiRequestId,
+      primaryCategory: saved.name,
+      confidenceLevel: saved.aiConfidence >= 80 ? 'high' : saved.aiConfidence >= 50 ? 'medium' : 'low'
+    }, data.aiDecision);
+  }
   if (index >= 0) crystals[index] = saved; else crystals.unshift(saved);
   setJSON(STORAGE.crystals, crystals);
   $('#crystalDialog').close();

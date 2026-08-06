@@ -158,7 +158,7 @@
     <section class="page">
       <div id="mineLock" class="lock-panel">
         <h1>管理中心</h1>
-        <p>请输入店主口令后查看和管理信息</p>
+        <p>请输入店主口令，验证通过后查看和管理信息</p>
         <input id="minePassword" type="password" placeholder="输入专属口令" />
         <button class="primary-btn" id="unlockMine" type="button">进入管理</button>
         <p class="message" id="lockMessage"></p>
@@ -181,6 +181,12 @@
       <article class="card manage-entry" id="crystalEntry">
         <b>水晶管理</b>
         <span>查看、添加、编辑、删除、上下架水晶。</span>
+      </article>
+
+      <article class="card">
+        <b>AI 建议反馈</b>
+        <p id="aiFeedbackSummary">当前设备暂无反馈记录。</p>
+        <small>仅统计采用、人工修改和不采用，不上传商品图片。</small>
       </article>
     </section>
   </template>
@@ -257,6 +263,8 @@
       <input name="source" type="hidden" />
       <input name="manualEdited" type="hidden" />
       <input name="mineralCategory" type="hidden" />
+      <input name="aiRequestId" type="hidden" />
+      <input name="aiDecision" type="hidden" />
 
       <label>水晶名称<input name="name" placeholder="可不填，上传图片后 AI 会自动识别" /></label>
       <label>补充问题（选填）<textarea id="crystalAiQuestion" placeholder="例如：这颗更适合搭配什么颜色？不填也会自动完整分析。"></textarea></label>

@@ -149,6 +149,9 @@ dialog::backdrop { background: rgba(33, 68, 40, .28); }
 .ai-result.uncertain { background: rgba(255,250,235,.76); }
 .ai-result.not-found { background: rgba(255,245,242,.72); color: #9a645d; }
 .ai-result small { display: block; margin-top: 9px; color: #829486; line-height: 1.55; }
+.ai-warning { margin-top: 8px; color: #9a645d; }
+.ai-actions { display: flex; gap: 8px; margin-top: 10px; }
+.ai-actions button { flex: 1; min-height: 38px; }
 .option-chips { gap: 7px; }
 .option-chip { padding: 7px 10px; }
 
