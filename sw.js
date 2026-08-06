@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crystal-five-elements-v1';
+const CACHE_NAME = 'crystal-five-elements-v2';
 const ASSETS = [
   './',
   './index.html',

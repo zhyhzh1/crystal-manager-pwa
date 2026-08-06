@@ -258,14 +258,15 @@
       <input name="manualEdited" type="hidden" />
       <input name="mineralCategory" type="hidden" />
 
-      <label>水晶名称<input name="name" placeholder="例如：绿幽灵" required /></label>
-      <button class="ghost-btn ai-classify-btn" id="aiClassifyCrystal" type="button">AI智能分类</button>
+      <label>水晶名称<input name="name" placeholder="可不填，上传图片后 AI 会自动识别" /></label>
+      <label>补充问题（选填）<textarea id="crystalAiQuestion" placeholder="例如：这颗更适合搭配什么颜色？不填也会自动完整分析。"></textarea></label>
+      <button class="ghost-btn ai-classify-btn" id="aiClassifyCrystal" type="button">AI 分析图片与商品</button>
       <div id="aiClassifyResult" class="ai-result" hidden></div>
 
       <div class="image-field">
         <div class="image-preview" id="crystalImagePreview">晶</div>
         <div class="image-actions">
-          <label class="file-label">上传图片
+          <label class="file-label">上传图片并自动分析
             <input id="crystalImageFile" type="file" accept="image/*" />
           </label>
           <input id="crystalImageUrl" placeholder="或粘贴图片链接（选填）" />
