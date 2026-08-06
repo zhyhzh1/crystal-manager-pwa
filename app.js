@@ -913,6 +913,27 @@ function fileToDataURL(file) {
   });
 }
 
+function compressImageForAI(file, maxSide = 1280, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('图片读取失败'));
+    };
+    image.src = objectUrl;
+  });
+}
+
 function findConfirmedCrystalByName(name, currentId = '') {
   const normalizedName = String(name || '').trim();
   if (!normalizedName) return null;
@@ -1008,6 +1029,58 @@ function renderAIResult(result) {
   `;
 }
 
+function renderRemoteAIResult(result) {
+  const box = $('#aiClassifyResult');
+  const levelLabels = { high: '较高', medium: '中等', low: '较低' };
+  const level = result.confidenceLevel || 'low';
+  box.className = `ai-result ${level === 'low' ? 'not-found' : level === 'medium' ? 'uncertain' : ''}`;
+  box.hidden = false;
+  box.innerHTML = `
+    <strong>AI 分析完成，请店员确认</strong>
+    <div>首选候选：${escapeHTML(result.primaryCategory || '暂无')}</div>
+    <div>其他可能：${escapeHTML(asArray(result.alternatives).join('、') || '暂无')}</div>
+    <div>识别可信度：${escapeHTML(levelLabels[level] || '较低')}</div>
+    <div>可见特征：${escapeHTML(Object.values(result.visibleFeatures || {}).filter(Boolean).join('；') || '暂无')}</div>
+    <div>传统寓意：${escapeHTML(result.traditionalMeaning || '暂无')}</div>
+    <div>商品简介：${escapeHTML(result.description || '暂无')}</div>
+    ${result.customAnswer ? `<div>补充回答：${escapeHTML(result.customAnswer)}</div>` : ''}
+    <div>不确定信息：${escapeHTML(asArray(result.uncertainties).join('、') || '无')}</div>
+    <div class="ai-meta">
+      ${asArray(result.element).map(item => `<span>五行：${escapeHTML(item)}</span>`).join('')}
+      ${asArray(result.tags).map(item => `<span>${escapeHTML(item)}</span>`).join('')}
+      ${asArray(result.directions).map(item => `<span>${escapeHTML(item)}</span>`).join('')}
+    </div>
+    <small>本次用量：${Number(result.totalTokens || 0)} tokens。AI 不能鉴定真伪、天然性、产地或实际功效。</small>
+  `;
+}
+
+async function requestCrystalAI({ image, productName, customQuestion }) {
+  const response = await fetch('/.netlify/functions/analyze-crystal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image, productName, customQuestion })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.success) throw new Error(payload.message || `AI 请求失败（${response.status}）`);
+  return payload.data;
+}
+
+function fillRemoteAIForm(result) {
+  const mapped = {
+    name: result.primaryCategory,
+    mineralCategory: result.mineralCategory,
+    element: result.element,
+    tags: result.tags,
+    directions: result.directions,
+    role: result.role,
+    description: result.description,
+    aiConfidence: { high: 90, medium: 65, low: 35 }[result.confidenceLevel] || 35,
+    aiStatus: result.confidenceLevel === 'low' ? 'uncertain' : 'success',
+    source: 'ai'
+  };
+  fillCrystalForm(mapped);
+}
+
 function openCrystalEditor(item = null) {
   const dialog = $('#crystalDialog');
   const form = $('#crystalForm');
@@ -1039,10 +1112,43 @@ function openCrystalEditor(item = null) {
     fields.manualEdited.value = 'true';
     if (fields.source.value === 'ai') fields.source.value = 'manual';
   };
+  const runRemoteAnalysis = async image => {
+    const button = $('#aiClassifyCrystal');
+    const box = $('#aiClassifyResult');
+    button.disabled = true;
+    button.textContent = 'AI 正在观察……';
+    box.hidden = false;
+    box.className = 'ai-result';
+    box.innerHTML = '<strong>正在分析图片与商品信息……</strong><div>通常需要数秒，请不要关闭页面。</div>';
+    try {
+      const result = await requestCrystalAI({
+        image: image || fields.image.value,
+        productName: fields.name.value.trim(),
+        customQuestion: $('#crystalAiQuestion').value.trim()
+      });
+      renderRemoteAIResult(result);
+      fillRemoteAIForm(result);
+    } catch (error) {
+      const fallback = analyzeCrystalName(fields.name.value, fields.id.value);
+      if (fields.name.value.trim()) {
+        fallback.message = `真实 AI 暂时不可用：${error.message}。已改用本地规则结果。`;
+        renderAIResult(fallback);
+        fillCrystalForm(fallback);
+      } else {
+        box.className = 'ai-result not-found';
+        box.innerHTML = `<strong>本次分析失败</strong><div>${escapeHTML(error.message)}</div><div>请稍后重试，或手动输入名称和分类信息。</div>`;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = '重新 AI 分析';
+    }
+  };
   $('#aiClassifyCrystal').onclick = () => {
-    const result = analyzeCrystalName(fields.name.value, fields.id.value);
-    renderAIResult(result);
-    fillCrystalForm(result);
+    if (!fields.image.value && !fields.name.value.trim()) {
+      alert('请先上传图片或输入水晶名称。');
+      return;
+    }
+    runRemoteAnalysis();
   };
   $('#crystalImageUrl').oninput = event => {
     fields.image.value = event.target.value.trim();
@@ -1051,9 +1157,15 @@ function openCrystalEditor(item = null) {
   $('#crystalImageFile').onchange = async event => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件。');
+      return;
+    }
     fields.image.value = await fileToDataURL(file);
     $('#crystalImageUrl').value = '';
     updateImagePreview(fields.image.value, fields.name.value);
+    const aiImage = await compressImageForAI(file);
+    await runRemoteAnalysis(aiImage);
   };
   dialog.showModal();
 }

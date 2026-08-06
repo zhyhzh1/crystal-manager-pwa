@@ -141,12 +141,14 @@ dialog::backdrop { background: rgba(33, 68, 40, .28); }
 .file-label { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border-radius: 999px; background: rgba(217,243,220,.9); color: #356d3e; font-size: 13px; }
 .file-label input { display: none; }
 .ai-classify-btn { width: 100%; margin-top: -4px; }
+.ai-classify-btn:disabled { cursor: wait; opacity: .68; }
 .ai-result { padding: 12px; border: 1px dashed rgba(93,138,98,.45); border-radius: 15px; background: rgba(255,255,255,.66); color: #58755d; font-size: 12px; line-height: 1.65; }
 .ai-result strong { display: block; margin-bottom: 5px; color: var(--dark); font-family: "Kaiti SC", "STKaiti", serif; font-size: 16px; }
 .ai-result .ai-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .ai-result .ai-meta span { padding: 4px 8px; border-radius: 999px; background: rgba(229,246,230,.92); color: #4b754f; font-size: 11px; }
 .ai-result.uncertain { background: rgba(255,250,235,.76); }
 .ai-result.not-found { background: rgba(255,245,242,.72); color: #9a645d; }
+.ai-result small { display: block; margin-top: 9px; color: #829486; line-height: 1.55; }
 .option-chips { gap: 7px; }
 .option-chip { padding: 7px 10px; }
 
