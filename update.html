@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>更新晶石五行 PWA</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: #f5f1e8; color: #355b3c; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+    main { width: min(100%, 420px); padding: 28px; box-sizing: border-box; border: 1px solid #d9e4d7; border-radius: 24px; background: rgba(255,255,255,.86); box-shadow: 0 18px 50px rgba(53,91,60,.1); text-align: center; }
+    h1 { margin: 0 0 12px; font-size: 24px; }
+    p { margin: 0; color: #69806d; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 id="title">正在更新应用……</h1>
+    <p id="message">只清理程序缓存，不会删除你的顾客和水晶记录。</p>
+  </main>
+  <script>
+    (async () => {
+      try {
+        const registrations = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistrations() : [];
+        await Promise.all(registrations.map(item => item.unregister()));
+        const keys = 'caches' in window ? await caches.keys() : [];
+        await Promise.all(keys.filter(key => key.startsWith('crystal-five-elements-')).map(key => caches.delete(key)));
+        document.getElementById('title').textContent = '更新完成';
+        document.getElementById('message').textContent = '正在打开最新版……';
+        setTimeout(() => location.replace('./?updated=' + Date.now()), 500);
+      } catch (error) {
+        document.getElementById('title').textContent = '自动更新失败';
+        document.getElementById('message').textContent = '请关闭桌面上的旧应用，再用 Safari 打开正式网址。';
+      }
+    })();
+  </script>
+</body>
+</html>

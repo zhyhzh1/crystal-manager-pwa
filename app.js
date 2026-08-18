@@ -945,15 +945,6 @@ function updateImagePreview(value, name = '晶') {
     preview.textContent = crystalInitial(name);
   }
 }
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 function compressImageForAI(file, maxSide = 1280, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -1256,11 +1247,21 @@ function openCrystalEditor(item = null) {
       alert('请选择图片文件。');
       return;
     }
-    fields.image.value = await fileToDataURL(file);
-    $('#crystalImageUrl').value = '';
-    updateImagePreview(fields.image.value, fields.name.value);
-    const aiImage = await compressImageForAI(file);
-    await runRemoteAnalysis(aiImage);
+    const box = $('#aiClassifyResult');
+    box.hidden = false;
+    box.className = 'ai-result';
+    box.innerHTML = '<strong>正在处理手机照片……</strong><div>图片会先压缩，再用于预览、保存和 AI 分析。</div>';
+    try {
+      const aiImage = await compressImageForAI(file);
+      fields.image.value = aiImage;
+      latestAIImage = aiImage;
+      $('#crystalImageUrl').value = '';
+      updateImagePreview(aiImage, fields.name.value);
+      await runRemoteAnalysis(aiImage);
+    } catch (error) {
+      box.className = 'ai-result not-found';
+      box.innerHTML = `<strong>图片处理失败</strong><div>${escapeHTML(error.message || '请换一张 JPG、PNG 或系统可预览的照片重试。')}</div>`;
+    }
   };
   dialog.showModal();
 }
@@ -1311,7 +1312,15 @@ $('#crystalForm').onsubmit = event => {
 tabs.forEach(tab => tab.onclick = () => tab.dataset.tab === 'measure' ? showHome() : showMine());
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  let reloadingForUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForUpdate) return;
+    reloadingForUpdate = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('./sw.js')
+    .then(registration => registration.update())
+    .catch(() => {});
 }
 
 await loadInitialCrystals();
